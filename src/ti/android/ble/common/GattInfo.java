@@ -54,7 +54,7 @@ public class GattInfo {
   public static final UUID CC_SERVICE_UUID = UUID.fromString("f000ccc0-0451-4000-b000-000000000000");
   //уег© 20140208
   public static final UUID SERVICE_UUID_FFE0 = UUID.fromString("0000ffe0-0000-1000-8000-00805f9b34fb");
-  
+  public static final UUID Char6_UUID = UUID.fromString("0000ffe6-0000-1000-8000-00805f9b34fb");
   private static Map<String, String> mNameMap = new HashMap<String, String>();
   private static Map<String, String> mDescrMap = new HashMap<String, String>();
 

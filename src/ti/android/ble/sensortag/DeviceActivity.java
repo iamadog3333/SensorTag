@@ -81,6 +81,8 @@ public class DeviceActivity extends ViewPagerActivity {
   private BluetoothDevice mBluetoothDevice = null;
   private BluetoothGatt mBtGatt = null;
   private List<BluetoothGattService> mServiceList = null;
+  private List<BluetoothGattCharacteristic> mCharacterList = null; //张强 20140208
+  private BluetoothGattCharacteristic mChar = null;  //张强 20140208
   private static final int GATT_TIMEOUT = 100; // milliseconds
   private boolean mServicesRdy = false;
 	private boolean mIsReceiving = false;
@@ -94,6 +96,7 @@ public class DeviceActivity extends ViewPagerActivity {
   private boolean mHeightCalibrateRequest = true;
   //张强 20140208
   public static UUID uuid_test_show = null;
+  private boolean Write_Char_Success = false;
   
   public DeviceActivity() {
     mResourceFragmentPager = R.layout.fragment_pager;
@@ -334,12 +337,47 @@ public class DeviceActivity extends ViewPagerActivity {
   private void pair_senroro_beacon()
   {
 	  mFFE0Service = null;
+	  int FFE0ServiceFound=0;
+	  int CharacterFound=1;
 	  for (int i = 0; i < mServiceList.size(); i++) 
       {  //找出beacon中的FFE0服务
 		  BluetoothGattService srv = mServiceList.get(i);
           if (srv.getUuid().equals(GattInfo.SERVICE_UUID_FFE0)) 
-              {mFFE0Service = srv;} 
+              {mFFE0Service = srv;
+               FFE0ServiceFound=1;} 
       }
+	  if(FFE0ServiceFound==1)
+	  {  //读出FFE0服务中的所有character
+		  try {
+			  mCharacterList=mFFE0Service.getCharacteristics ();
+		    } catch (Exception e) {
+		      e.printStackTrace();
+		      CharacterFound= 0;
+		    }
+		  if(CharacterFound==1)
+		  {   //找出Characteristic 6
+			  for (int i = 0; i < mCharacterList.size(); i++) 
+		        {BluetoothGattCharacteristic character = mCharacterList.get(i);
+		        //显示所有的Character
+		        //System.out.println("Char_uuid"+i+":"+character.getUuid()); 
+		        if(character.getUuid().equals(GattInfo.Char6_UUID))
+		        	mChar = character;
+		        }
+			  //往Characteristic 6写入数据
+			  byte[] Buff={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+			  boolean ok = false;
+			  ok = mChar.setValue(Buff);
+			  /*if(ok)
+			     {System.out.println("Write to char6 Success!");}
+			  else
+			     {System.out.println("Write to char6 Failed!");} 
+			  */   
+			  //其实以上代码并没有写入数据，还需要
+			  mBtGatt.writeCharacteristic(mChar);
+			  System.out.println("往Characteristic 6写入数据.");
+			
+		   }
+	  }
 	  
   }
 
@@ -472,10 +510,12 @@ public class DeviceActivity extends ViewPagerActivity {
   			onCharacteristicChanged(uuidStr, value);
   		} else if (BluetoothLeService.ACTION_DATA_WRITE.equals(action)) {
   			// Data written
+  			 System.out.println("广播接收器 Data Written.");
   			String uuidStr = intent.getStringExtra(BluetoothLeService.EXTRA_UUID);
   			onCharacteristicWrite(uuidStr,status);
   		} else if (BluetoothLeService.ACTION_DATA_READ.equals(action)) {
   			// Data read
+  			System.out.println("广播接收器 Data Written.");
   			String uuidStr = intent.getStringExtra(BluetoothLeService.EXTRA_UUID);
   			byte  [] value = intent.getByteArrayExtra(BluetoothLeService.EXTRA_DATA);
   			onCharacteristicsRead(uuidStr,value,status);
@@ -488,8 +528,23 @@ public class DeviceActivity extends ViewPagerActivity {
   };
 
 	private void onCharacteristicWrite(String uuidStr, int status) {
-	  Log.d(TAG,"onCharacteristicWrite: " + uuidStr);
+		Log.d(TAG,"onCharacteristicWrite: " + uuidStr);
+	  //回调函数  写入Characteristc 6 成功之后	
+	  Write_Char_Success = true;	
+	  System.out.println("DeviceActi-->onCharacteristicWrite.");	
+	  System.out.println("uuidStr is :"+uuidStr);//Char6_UUID
+	  if (status == BluetoothGatt.GATT_SUCCESS)
+		  {System.out.println("Write to Char Success!");
+		  readDatafromChar6();}
+	  else
+		  System.out.println("Write to Char Failed.");
   }
+	private void readDatafromChar6()
+	{//从Characteristic 6读出数据  远程读取
+      mBtGatt.readCharacteristic(mChar); 
+      System.out.println("远程读取readDatafromChar6.");
+		
+	}
 
 	private void onCharacteristicChanged(String uuidStr, byte[] value) {
 		if (mDeviceView != null) {
@@ -520,6 +575,20 @@ public class DeviceActivity extends ViewPagerActivity {
 	}
 
 	private void onCharacteristicsRead(String uuidStr, byte [] value, int status) {
+		//张强 20140208
+		System.out.println("DeviceAct-->onCharacteristicsRead.");
+		System.out.println("uuidStr:"+uuidStr);
+	    if (status == BluetoothGatt.GATT_SUCCESS)
+		  {System.out.println("Read from Char Success!");
+		  }
+	   else
+		  System.out.println("Read from Char Failed.");
+	   System.out.printf("Read from char6 is:");
+	   for(int i = 0; i < value.length; i++)
+		     {System.out.printf("%d ", value[i]); }
+	   System.out.println();
+		   
+		/*	  
 		Log.i(TAG, "onCharacteristicsRead: " + uuidStr);
 		if (uuidStr.equals(SensorTag.UUID_BAR_CALI.toString())) {
 			Log.i(TAG, "CALIBRATED");
@@ -538,7 +607,7 @@ public class DeviceActivity extends ViewPagerActivity {
 			}
 
 			BarometerCalibrationCoefficients.INSTANCE.barometerCalibrationCoefficients = cal;
-		}
+		}*/
 	}
 
 }

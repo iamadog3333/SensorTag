@@ -122,11 +122,13 @@ public class BluetoothLeService extends Service {
 
     @Override
     public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+    	System.out.println("LeService-->onCharacteristicRead.");//张强 20140208
     	broadcastUpdate(ACTION_DATA_READ,characteristic,status);
     }
 
     @Override
     public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+    	System.out.println("LeService-->onCharacteristicWrite.");//张强 20140208
     	broadcastUpdate(ACTION_DATA_WRITE,characteristic,status);
     }
 
